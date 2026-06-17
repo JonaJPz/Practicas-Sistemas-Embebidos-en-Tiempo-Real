@@ -3,8 +3,7 @@
  * @brief   Punto de entrada del sistema de control de LEDs por potenciometros.
  *
  * =============================================================================
- * CONCLUSION DEL EQUIPO
- * Integrantes: Nombre Apellido, Nombre Apellido, Nombre Apellido
+ * CONCLUSION DE LA PRACTICA
  *
  * El uso de pvParameters con una estructura task_params_t permite instanciar
  * una sola funcion de tarea (vTaskPotLED) tres veces con configuraciones

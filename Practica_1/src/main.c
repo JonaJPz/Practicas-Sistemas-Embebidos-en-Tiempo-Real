@@ -7,28 +7,10 @@
  *          Gestiona dos modos de parpadeo de LED controlados por boton,
  *          lectura de sensor ADC y reporte por UART.
  *h
- *          Hardware utilizado (configuracion del alumno):
+ *          Hardware utilizado:
  *            GPIO17  — LED        (salida digital)
  *            GPIO5   — Boton      (entrada con PULL-UP interno)
  *            GPIO34  — ADC1 CH6   (entrada analogica, potenciometro 10k)
- *
- * @note    El codigo sigue las reglas aplicables de MISRA-C:2012.
- *          Las desviaciones necesarias por la API de ESP-IDF se documentan
- *          en linea con la etiqueta [MISRA-DEVIATION].
- *
- * @note    [ADC1-RESTRICTION] GPIO34 pertenece a ADC1_CHANNEL_6.
- *          ADC1 permite uso simultaneo con Wi-Fi y Bluetooth (no es conflictivo
- *          a diferencia de ADC2). Para uso exclusivo en practica esta es la
- *          configuracion recomendada.
- *          Ref: ESP32 Technical Reference Manual, seccion 29.3.
- *
- * Plataforma : ESP32 — ESP-IDF v5.x
- * RTOS       : FreeRTOS incluido en ESP-IDF
- */
- 
-/* ============================================================
-   INCLUDES
-   Regla MISRA 20.1 — incluir solo cabeceras necesarias, en orden.
    ============================================================ */
 #include <stdio.h>
 #include <stdint.h>
@@ -41,8 +23,6 @@
  
 /* ============================================================
    CONFIGURACION DE PINES
-   Regla MISRA 2.5 — macros deben usarse donde se definen.
-   Se usa 'U' suffix en literales enteros sin signo (MISRA 7.2).
    ============================================================ */
 #define GPIO_LED_PIN     (17U)           /**< Pin de salida para el LED             */
 #define GPIO_BUTTON_PIN  (5U)            /**< Pin de entrada para el boton          */
@@ -68,10 +48,6 @@
  
 /* ============================================================
    VARIABLES GLOBALES COMPARTIDAS
-   Regla MISRA 8.4 — declaracion visible antes de uso.
-   'volatile' es obligatorio: el compilador no puede optimizar
-   accesos a variables que otras tareas pueden modificar en
-   cualquier momento (MISRA 8.3 — tipo completo en declaracion).
    ============================================================ */
  
 /** Indica que el sistema esta en modo rapido (true) o lento (false). */
@@ -93,7 +69,6 @@ static adc_oneshot_unit_handle_t g_adc_handle = NULL;
  
 /* ============================================================
    PROTOTIPOS DE FUNCIONES PRIVADAS
-   Regla MISRA 8.2 — prototipo visible antes de la definicion.
    ============================================================ */
 static void task_led_fast(void *param);
 static void task_led_slow(void *param);
@@ -220,8 +195,6 @@ static void task_sensor(void *param)
             }
             else
             {
-                /* ESP_ERR_TIMEOUT aqui puede indicar conflicto con radio en ADC2.
-                   Con ADC1 (GPIO34) esto no ocurre. */
                 printf("[SENS] Error al leer ADC (codigo: %d)\n", (int)status);
             }
         }
@@ -242,8 +215,6 @@ static void task_monitor(void *param)
  
     while (1)
     {
-        /* [MISRA-DEVIATION 10.1] gpio_get_level devuelve int;
-           lo convertimos explicitamente a bool. */
         btn_current = (gpio_get_level(GPIO_BUTTON_PIN) != 0);
  
         if ((btn_prev == true) && (btn_current == false))
@@ -280,15 +251,13 @@ void vApplicationIdleHook(void)
    INICIALIZACION DEL ADC — ESP-IDF v5.x oneshot API
    
    GPIO34 = ADC1_CHANNEL_6:
-     - unit_id : ADC_UNIT_1  (no conflicto con Wi-Fi / Bluetooth)
+     - unit_id : ADC_UNIT_1 
      - atten   : ADC_ATTEN_DB_12  (0..3.3V)
    ============================================================ */
 static void init_adc(void)
 {
     esp_err_t status;
  
-    /* [ADC1-RESTRICTION] Se inicializa ADC_UNIT_1 porque GPIO34 = ADC1_CH6.
-       ADC1 es segura para usar con Wi-Fi y Bluetooth (no hay restriction de hardware). */
     const adc_oneshot_unit_init_cfg_t unit_cfg = {
         .unit_id  = ADC_UNIT_1,              /* ← ADC1 para GPIO34             */
         .ulp_mode = ADC_ULP_MODE_DISABLE,
