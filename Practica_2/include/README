@@ -1,0 +1,90 @@
+# Práctica 2 — Control de brillo de LEDs mediante potenciómetros y tareas FreeRTOS
+
+Asignatura: Sistemas Embebidos en Tiempo Real  
+Academia: Ingeniería en Electrónica y Control de Sistemas de Aeronaves  
+Cuatrimestre: Decimo
+
+## ntegrantes
+
+| Nombre                 | Matrícula   |
+|------------------------|-------------|
+| Rodrigo Romero Beltran |  7948       |     
+| Nombre Apellido | 000000 |
+
+
+
+## Descripción del proyecto
+
+Sistema multitarea en FreeRTOS sobre ESP32 que lee tres potenciómetros mediante ADC oneshot y controla el brillo de tres LEDs con PWM (LEDC), de modo que la intensidad de cada LED es proporcional al valor del potenciómetro correspondiente.
+
+El mecanismo clave es `pvParameters`: una sola función de tarea (`vTaskPotLED`) sirve para los tres canales gracias al puntero `void*` que recibe al inicio, el cual se castea a `task_params_t*` para obtener los índices de canal y la etiqueta de log correspondientes.
+
+
+
+## Tabla de pines
+
+| Canal | Potenciómetro | GPIO ADC | Canal ADC1 | LED | GPIO LED |
+|-------|---------------|----------|------------|-----|----------|
+| 0     | POT0          | GPIO 36  | CH0        | Rojo   | GPIO 25 |
+| 1     | POT1          | GPIO 39  | CH3        | Verde  | GPIO 26 |
+| 2     | POT2          | GPIO 34  | CH6        | Azul   | GPIO 27 |
+
+
+## Configuración de tareas
+
+| Parámetro | Valor | Descripción |
+|-----------|-------|-------------|
+| `TASK_PERIOD_MS` | 50 ms | Período de muestreo por tarea |
+| `TASK_STACK_SIZE_WORDS` | 1024 words | Tamaño de stack (4 KB) |
+| `TASK_LOG_EVERY_N` | 20 ciclos | Frecuencia de log UART (~1 s) |
+
+---
+
+## Cómo compilar y cargar
+
+```bash
+# Compilar
+pio run
+
+# Cargar a la placa
+pio run --target upload
+
+# Monitor serial
+pio device monitor --baud 115200
+```
+
+---
+
+## Salida esperada en terminal
+
+```
+I (312) TASKS: [POT0-LED0] Tarea iniciada (ADC ch0 -> LED ch0)
+I (314) TASKS: [POT1-LED1] Tarea iniciada (ADC ch1 -> LED ch1)
+I (316) TASKS: [POT2-LED2] Tarea iniciada (ADC ch2 -> LED ch2)
+...
+I (1062) TASKS: [POT2-LED2] raw=3210 duty=199 heap=189432 wm=1456
+I (1063) TASKS: [POT1-LED1] raw= 512 duty= 31 heap=189432 wm=1488
+I (1064) TASKS: [POT0-LED0] raw=2048 duty=127 heap=189432 wm=1512
+```
+
+---
+
+## Cumplimiento MISRA-C:2012
+
+Las desviaciones documentadas son:
+
+| Regla | Archivo | Justificación |
+|-------|---------|---------------|
+| Rule 11.5 | tasks.c | Cast `void*` → `task_params_t*`: mecanismo oficial de FreeRTOS para pvParameters; el puntero siempre apunta a un objeto estático con lifetime indefinido. |
+| Rule 14.4 | tasks.c | Condición de bucle `for(;;)` usando sintaxis estándar de tarea infinita FreeRTOS; alternativa `while(1U)` equivalente y aceptable. |
+
+
+Read more about using header files in official GCC documentation:
+
+* Include Syntax
+* Include Operation
+* Once-Only Headers
+* Computed Includes
+
+https://gcc.gnu.org/onlinedocs/cpp/Header-Files.html
+
